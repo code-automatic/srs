@@ -1,14 +1,24 @@
-# TÀI LIỆU ĐẶC TẢ YÊU CẦU PHẦN MỀM (SORTWARE REQUIREMENT SPECIFICATION - SRS)
+# TÀI LIỆU ĐẶC TẢ YÊU CẦU PHẦN MỀM (SRS)
 
 ## Dự án: Nền tảng Tự chấm code và Thực hành CNTT (Coding Judge Platform)
 
 | | |
 |---|---|
-| **Phiên bản** | 1.3 |
-| **Ngày cập nhật** | 01/11/2026 |
+| **Phiên bản** | 1.4 |
+| **Ngày cập nhật** | 02/11/2026 |
 | **Trạng thái** | Bản thảo để team review |
+| **CSDL tham chiếu** | `coding_judge_schema.sql` (PostgreSQL), giữ nguyên, SRS được viết cho khớp schema |
+| **Tài liệu liên quan** | `02_PHAN_CONG_NHIEM_VU.md` (phân công), `03_BACKLOG_THEO_SPRINT.md` (user story theo sprint) |
 
+**Lịch sử thay đổi**
 
+| Phiên bản | Nội dung |
+|---|---|
+| 1.0 | Bản đầu tiên, mô hình dữ liệu tự đề xuất |
+| 1.1 | Đồng bộ với `coding_judge_schema.sql` (chỉ lưu Accepted, Auth Service tách riêng) |
+| 1.2 | Viết lại theo phong cách chuyên nghiệp: endpoint, JSON, SQL, sơ đồ Mermaid; đặc tả đủ 12 chức năng |
+| 1.3 | Thêm mục thư viện dùng chung (2.5); tách phần phân công và backlog thành tài liệu riêng; thống nhất mã nhiệm vụ với bảng phân công |
+| 1.4 | Điều chỉnh phân công cho team 4 người (mục 6, mục 7); các mục chức năng và kỹ thuật không đổi |
 
 ---
 
@@ -1148,32 +1158,31 @@ sequenceDiagram
 
 Chi tiết từng nhiệm vụ, phụ thuộc, lộ trình sprint, quy tắc làm việc: xem **`02_PHAN_CONG_NHIEM_VU.md`**. User story theo sprint: xem **`03_BACKLOG_THEO_SPRINT.md`**.
 
-*Giả định team 5 người, làm theo Scrum.*
+*Giả định team 4 người, làm theo Scrum.*
 
 | Thành viên | Vai trò Scrum | Phụ trách chính |
 |---|---|---|
-| TV1 | Product Owner | Auth Service (F01), admin user, package `common-auth`, `common-errors` |
-| TV2 | Scrum Master | Run Service, Judge API + Worker, sandbox (F06, F07) |
-| TV3 | Developer | Core API nội dung (F03, F04, F05, F08, F09, F12 nội dung), `common-db`, `common-levels` |
-| TV4 | Developer | Frontend toàn bộ (F02 và UI các chức năng, Admin UI) |
-| TV5 | Developer + QA | Leaderboard (F10), Diễn đàn (F11), kiểm thử tích hợp và bảo mật |
+| TV1 | Product Owner | Auth Service (F01), Diễn đàn (F11, API và giao diện), admin user và kiểm duyệt diễn đàn, `common-auth`, `common-errors`, test plan |
+| TV2 | Scrum Master | Run Service, Judge API + Worker, sandbox (F06, F07), Leaderboard API (F10), kiểm thử end-to-end |
+| TV3 | Developer | Core API nội dung (F03, F04, F05, F08, F09, F12 nội dung), `common-db`, `common-levels`, kiểm thử bảo mật web |
+| TV4 | Developer | Frontend (F02 và giao diện các chức năng, Admin UI), trừ trang Diễn đàn và Hồ sơ |
 
-| Chức năng | TV1 | TV2 | TV3 | TV4 | TV5 |
-|---|---|---|---|---|---|
-| F01 Đăng ký / Đăng nhập | R | | | S | |
-| F02 Landing page | S | | S | R | |
-| F03 Chọn ngôn ngữ | | S | R | S | |
-| F04 Chọn gói bài | | | R | S | |
-| F05 Code mẫu | | S | R | S | |
-| F06 Run code | | R | S | S | |
-| F07 Submit | | R | S | S | |
-| F08 Level up | | S | R | S | |
-| F09 Lịch sử nộp bài | | | R | S | |
-| F10 Bảng xếp hạng | S | | | S | R |
-| F11 Diễn đàn | | | | S | R |
-| F12 Quản trị | R (user) | | R (nội dung) | R (UI) | S (diễn đàn) |
+| Chức năng | TV1 | TV2 | TV3 | TV4 |
+|---|---|---|---|---|
+| F01 Đăng ký / Đăng nhập | R | | | S |
+| F02 Landing page | S | | S | R |
+| F03 Chọn ngôn ngữ | | S | R | S |
+| F04 Chọn gói bài | | | R | S |
+| F05 Code mẫu | | S | R | S |
+| F06 Run code | | R | S | S |
+| F07 Submit | | R | S | S |
+| F08 Level up | | S | R | S |
+| F09 Lịch sử nộp bài | | | R | S |
+| F10 Bảng xếp hạng | S | R | | S |
+| F11 Diễn đàn | R | | | S |
+| F12 Quản trị | R (user, diễn đàn) | | R (nội dung) | R (UI) |
 
-R = chịu trách nhiệm chính, S = hỗ trợ (FE hỗ trợ ở đây nghĩa là làm giao diện).
+R = chịu trách nhiệm chính, S = hỗ trợ (TV4 hỗ trợ ở đây nghĩa là làm giao diện, trừ F11 là component dùng chung).
 
 ---
 
@@ -1183,7 +1192,7 @@ R = chịu trách nhiệm chính, S = hỗ trợ (FE hỗ trợ ở đây nghĩa
 |---|---|---|
 | Sandbox bị khai thác | Cao | Docker không mạng, seccomp, giới hạn tài nguyên; kiểm thử tấn công; cân nhắc Judge0 làm phương án dự phòng |
 | Judge là phần khó nhất, trễ tiến độ | Cao | Bắt đầu từ Sprint 1, làm Python trước, thêm ngôn ngữ dần |
-| TV2 và TV4 quá tải | Cao | Theo dõi burndown mỗi sprint; TV5 hỗ trợ viết một phần UI diễn đàn/xếp hạng; cắt phạm vi mức Could trước |
+| TV2 và TV4 quá tải | Cao | Theo dõi burndown mỗi sprint; TV1 đã nhận giao diện Diễn đàn và Hồ sơ; cắt phạm vi mức Could trước; nếu trễ ở Sprint 3 thì kéo dài thêm 1 sprint |
 | Nhiều service làm tăng công DevOps | Trung | Docker Compose duy nhất; hợp đồng OpenAPI từ Sprint 0; có thể gộp Core API/Run/Judge API chung một codebase nếu cần |
 | Phụ thuộc Auth khi hiển thị username | Trung | Tra cứu hàng loạt + cache Redis; username dự phòng khi Auth lỗi |
 | Chỉ lưu AC nên mất dữ liệu phân tích | Thấp | Chấp nhận ở v1.0; xem mục 8 |
