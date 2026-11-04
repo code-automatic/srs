@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| **Phiên bản** | 1.4 (khớp SRS 1.4 và backlog 1.4) |
-| **Ngày cập nhật** | 02/11/2026 |
+| **Phiên bản** | 1.5 (khớp SRS 1.5 và backlog 1.5) |
+| **Ngày cập nhật** | 04/11/2026 |
 | **Trạng thái** | Bản thảo để team review |
 | **Tài liệu gốc** | `01_SRS_Coding_Judge_Platform.md` |
 | **Tài liệu đi kèm** | `03_BACKLOG_THEO_SPRINT.md` |
@@ -22,14 +22,18 @@
 
 | TV | Họ tên | Vai trò Scrum | Vai trò kỹ thuật | Sở hữu (owner) |
 |---|---|---|---|---|
-| TV1 | ________ | Product Owner | Backend (Auth, Forum) + Frontend (Forum, Hồ sơ) | Auth Service, Forum API, `common-auth`, `common-errors`, test plan |
-| TV2 | ________ | Scrum Master | Judge Engine + Leaderboard | Run Service, Judge API, Judge Worker, sandbox images, Leaderboard API |
-| TV3 | ________ | Developer | Backend (Core Problem) | Core API (nội dung bài), `common-db`, `common-levels`, migration, seed |
-| TV4 | ________ | Developer | Frontend | Ứng dụng React (trừ trang Diễn đàn và Hồ sơ) |
+| TV1 | Quốc Thịnh | Product Owner | Backend (Auth, Forum) + Frontend (Forum, Hồ sơ) | Auth Service, Forum API, `common-auth`, `common-errors`, test plan |
+| TV2 | Tùng | Scrum Master | Judge Engine + Leaderboard | Run Service, Judge API, Judge Worker, sandbox images, Leaderboard API |
+| TV3 | Hiếu | Developer | Backend (Core Problem) | Core API (nội dung bài), `common-db`, `common-levels`, migration, seed |
+| TV4 | Huy | Developer | Frontend | Ứng dụng Next.js + TypeScript (trừ trang Diễn đàn và Hồ sơ) |
 
-*Điền họ tên vào cột thứ hai sau khi team thống nhất. Người đang chủ trì dự án thường nhận TV1 (PO); đổi nếu team muốn.*
+**Phân công hỗ trợ:** Hiếu (TV3) hỗ trợ Tùng (TV2); Quốc Thịnh (TV1) hỗ trợ Huy (TV4). Tùng và Huy vẫn là owner chính các task được giao; giữ nguyên mã TV và mã nhiệm vụ để truy vết.
 
-**Git Lead:** chọn một thành viên (có thể kiêm). Phụ trách quy trình nhánh, quy ước commit, bảo vệ nhánh `main` và `develop`.
+- **Hiếu → Tùng:** hỗ trợ DB/query/transaction, tích hợp `common-db`, `common-levels` và xử lý xung đột cấu hình giữa Core và Run/Judge; ưu tiên bảo đảm tiến độ Core.
+- **Quốc Thịnh → Huy:** hỗ trợ tích hợp đăng nhập/refresh/phân quyền, API quản trị user, component dùng chung với Forum/Profile và kiểm thử luồng frontend/backend.
+- Người hỗ trợ ghi rõ phần đã làm trong task/PR; chỉ tick hoàn thành khi đủ đầu ra, kiểm thử và review theo DoD.
+
+**Git Lead: Hiếu (TV3)**, Tùng (TV2) hỗ trợ cấu hình execution worker. Phụ trách quy trình nhánh, quy ước commit, bảo vệ nhánh `main` và `develop`.
 
 **Về vai trò Scrum Master:** TV2 làm SM nhưng cũng là người có khối lượng kỹ thuật lớn nhất ở Sprint 1–3. Nếu team thấy quá tải, có thể giao SM cho TV1 hoặc TV3 (nghi thức Scrum chỉ khoảng 3–4 giờ mỗi sprint). Đổi vai trò thì cập nhật cột "Vai trò Scrum" và nhiệm vụ T2-15.
 
@@ -58,14 +62,14 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 
 ## 3. NHIỆM VỤ CHI TIẾT THEO THÀNH VIÊN
 
-### TV1: Product Owner, Auth Service, Diễn đàn
+### TV1 — Quốc Thịnh: Product Owner, Auth Service, Diễn đàn
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
-| T1-01 | Thiết kế Auth DB (users, refresh_tokens, password_resets) và migration | FR-01.1 | 0 | Migration Alembic của Auth DB | |
+| T1-01 | Thiết kế Auth DB (users, refresh_tokens, password_resets) và migration | FR-01.1 | 0 | Migration Goose của Auth DB | |
 | T1-02 | API đăng ký, đăng nhập, hash mật khẩu, cấp JWT | FR-01.1–01.3 | 1 | `/auth/register`, `/auth/login` chạy được | T1-01 |
 | T1-03 | Refresh token, đăng xuất, thu hồi token | FR-01.4 | 1 | `/auth/refresh`, `/auth/logout` | T1-02 |
-| T1-04 | Package `common-auth`: dependency xác thực JWT, `require_admin` | FR-01.5 | 1 | Package cài được bằng `pip install -e` | T1-02 |
+| T1-04 | Package `common-auth`: middleware xác thực JWT, `RequireAdmin` | FR-01.5 | 1 | Go package import được trong cùng module; `go test ./...` pass | T1-02 |
 | T1-05 | Package `common-errors`: lỗi và handler theo SRS 2.3 | SRS 2.3 | 0 | Package dùng chung | |
 | T1-06 | API nội bộ tra cứu hàng loạt user (có service token) | FR-01.9 | 2 | `/internal/users?ids=` | T1-02 |
 | T1-07 | API admin: danh sách, tìm kiếm, khóa/mở khóa, đổi vai trò | FR-01.6, FR-12.1 | 2 | `/admin/users` | T1-04 |
@@ -83,7 +87,7 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T1-19 | Giao diện Diễn đàn: danh sách, chi tiết, bình luận lồng, like, Markdown an toàn | FR-11 | 4 | Trang diễn đàn | T1-14 |
 | T1-20 | Giao diện Hồ sơ cá nhân | FR-01.8 | 4 | Trang hồ sơ | T1-08 |
 
-### TV2: Scrum Master, Judge Engine, Bảng xếp hạng
+### TV2 — Tùng: Scrum Master, Judge Engine, Bảng xếp hạng
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
@@ -107,12 +111,12 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T2-18 | Cache Redis xếp hạng và tên user; ghép username từ Auth | FR-10.2, FR-10.5 | 4 | Cache hoạt động, có fallback username | T2-17, T1-06 |
 | T2-19 | Kiểm thử tích hợp end-to-end: đăng nhập → Run → Submit → Level up → Leaderboard | | 3–5 | Kịch bản chạy lặp lại được, báo cáo | T2-09, T2-17 |
 
-### TV3: Core API (nội dung bài tập)
+### TV3 — Hiếu: Core API (nội dung bài tập)
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
-| T3-01 | Alembic migration nhập `coding_judge_schema.sql` nguyên trạng | NFR-08 | 0 | DB dựng được bằng một lệnh | |
-| T3-02 | Package `common-db`: model SQLAlchemy cho toàn bộ bảng | NFR-08 | 1 | Package dùng chung cho Core, Run, Judge | T3-01 |
+| T3-01 | Goose migration nhập `coding_judge_schema.sql` nguyên trạng | NFR-08 | 0 | DB dựng được bằng một lệnh | |
+| T3-02 | Package `common-db`: model Go/sqlc cho toàn bộ bảng | NFR-08 | 1 | Package dùng chung cho Core, Run, Judge | T3-01 |
 | T3-03 | Model/CRUD nội bộ cho `user_problem_progress`, `submissions` | FR-07.4–07.6 | 2 | Hàm repository dùng bởi Judge | T3-02 |
 | T3-04 | API ngôn ngữ (public và theo bài) | FR-03.1–03.2 | 2 | `/languages`, `/problems/{slug}/languages` | T3-02 |
 | T3-05 | API gói bài, danh sách/lọc/chi tiết bài; không bao giờ trả test ẩn | FR-04.1–04.5 | 2 | `/categories`, `/problems`, `/problems/{slug}` | T3-02, T1-04 |
@@ -128,11 +132,11 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T3-15 | Seed dữ liệu mẫu: tối thiểu 3 gói × 3 cấp × vài bài, kèm test (cả team cùng soạn bài) | | 2–5 | Script seed chạy lặp lại được | T3-10 |
 | T3-16 | Kiểm thử bảo mật web: phân quyền, lộ test ẩn, XSS, rate limit | NFR-04, NFR-05 | 5 | Báo cáo bảo mật, lỗi đã sửa | T1-15, T2-11 |
 
-### TV4: Frontend
+### TV4 — Huy: Frontend
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
-| T4-01 | Khởi tạo dự án React, routing, layout, theme, Axios + interceptor refresh token, bộ component dùng chung | NFR-10 | 0–1 | Skeleton chạy được; component dùng chung cho cả TV1 | |
+| T4-01 | Khởi tạo dự án Next.js + TypeScript, routing, layout, theme, Axios + interceptor refresh token, bộ component dùng chung | NFR-10 | 0–1 | Skeleton chạy được; component dùng chung cho cả TV1 | |
 | T4-02 | Landing page | FR-02.1–02.4 | 1 | Trang Landing responsive | |
 | T4-03 | Đăng ký, đăng nhập, điều hướng theo vai trò | FR-01 | 1 | Trang auth + route guard | T1-02 |
 | T4-04 | Danh sách gói bài, trạng thái khóa, tiến độ cấp | FR-04.1–04.2, FR-08.6 | 2–3 | Trang gói bài | T3-05, T3-09 |
@@ -155,7 +159,7 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 |---|---|---|---|
 | Mọi service | Package `common-auth` (xác thực JWT, `require_admin`) | TV1 | Cuối Sprint 1 |
 | Mọi service | Package `common-errors` | TV1 | Sprint 0 |
-| Core, Run, Judge, Forum | Package `common-db` (model SQLAlchemy) | TV3 | Giữa Sprint 1 |
+| Core, Run, Judge, Forum | Package `common-db` (model Go/sqlc) | TV3 | Giữa Sprint 1 |
 | Core, Run, Judge | Package `common-levels` | TV3 | Giữa Sprint 2 |
 | Leaderboard, Landing | API `/internal/users` | TV1 | Sprint 2 |
 | Judge Worker | Hàm repository ghi `submissions`, `user_problem_progress` | TV3 | Đầu Sprint 3 |
@@ -198,7 +202,7 @@ coding-judge/
 │   ├── common-errors/   (TV1)
 │   ├── common-db/       (TV3)
 │   └── common-levels/   (TV3)
-├── frontend/        (TV4; thư mục pages/forum và pages/profile do TV1)
+├── frontend/        (TV4; app/forum và app/profile do TV1)
 ├── sandbox/         (TV2: Dockerfile từng ngôn ngữ)
 ├── infra/           (docker-compose, CI)
 └── docs/            (SRS, phân công, backlog, test plan)
@@ -257,3 +261,7 @@ Trong `services/core/`, mỗi người làm trong module riêng (`problems/`, `f
 ## 8. THEO DÕI TIẾN ĐỘ
 
 Mỗi thành viên cập nhật cột Trạng thái của nhiệm vụ mình phụ trách trong tài liệu theo dõi chung (bảng tính hoặc issue tracker của repo). Giá trị hợp lệ: `Chưa bắt đầu`, `Đang làm`, `Chờ review`, `Hoàn thành`, `Bị chặn (ghi rõ chặn bởi mã nhiệm vụ nào)`.
+
+## 9. Phối hợp cập nhật v1.5
+
+Stack bắt buộc: Next.js + TypeScript; Go + chi; pgx/sqlc; Goose; Asynq. Giữ toàn bộ mã task và owner. T4-11 triển khai Admin nội dung từ 08/11 thay vì chờ Sprint 3. T1-04 khung JWT contract làm 04–05/11 song song T1-02. T3-01 phải nhận schema thật trước migration. TV3 nhận repo/Compose/CI (US-04), TV2 hỗ trợ queue/sandbox. Lịch 11 tuần phía trên giữ làm tham chiếu; lịch thực thi 04–22/11 và quy tắc hỗ trợ AI tại 04_KE_HOACH_TICH_HOP.md.

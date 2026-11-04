@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| **Phiên bản** | 1.4 |
-| **Ngày cập nhật** | 02/11/2026 |
+| **Phiên bản** | 1.5 |
+| **Ngày cập nhật** | 04/11/2026 |
 | **Trạng thái** | Bản thảo để team review |
 | **CSDL tham chiếu** | `coding_judge_schema.sql` (PostgreSQL), giữ nguyên, SRS được viết cho khớp schema |
 | **Tài liệu liên quan** | `02_PHAN_CONG_NHIEM_VU.md` (phân công), `03_BACKLOG_THEO_SPRINT.md` (user story theo sprint) |
@@ -18,6 +18,7 @@
 | 1.1 | Đồng bộ với `coding_judge_schema.sql` (chỉ lưu Accepted, Auth Service tách riêng) |
 | 1.2 | Viết lại theo phong cách chuyên nghiệp: endpoint, JSON, SQL, sơ đồ Mermaid; đặc tả đủ 12 chức năng |
 | 1.3 | Thêm mục thư viện dùng chung (2.5); tách phần phân công và backlog thành tài liệu riêng; thống nhất mã nhiệm vụ với bảng phân công |
+| 1.5 | Chốt mục 8; Next.js + Go; quy tắc tích hợp và hạn nộp 22/11/2026 |
 | 1.4 | Điều chỉnh phân công cho team 4 người (mục 6, mục 7); các mục chức năng và kỹ thuật không đổi |
 
 ---
@@ -45,7 +46,7 @@ Tài liệu là cơ sở để phân chia công việc cho team phát triển (x
 
 ### 1.3 Đối tượng sử dụng tài liệu (Target Audience)
 
-- **Đội phát triển (Developers):** Triển khai Backend (FastAPI), Judge Engine, Frontend (React).
+- **Đội phát triển (Developers):** Triển khai Backend (Go + chi), Judge Engine, Frontend (Next.js + TypeScript).
 - **Kiểm thử viên (QA):** Xây dựng test plan, kiểm thử tích hợp và bảo mật sandbox.
 - **Product Owner / Scrum Master:** Quản lý backlog, nghiệm thu theo tiêu chí chấp nhận.
 - **Giảng viên hướng dẫn:** Đánh giá phạm vi và chất lượng đặc tả.
@@ -87,11 +88,11 @@ Các quy tắc này lấy trực tiếp từ schema và là ràng buộc bắt b
 
 ```mermaid
 flowchart TD
-    U["Người dùng (Guest / User / Admin)"] --> FE["Frontend SPA (React + Monaco Editor)"]
-    FE -->|"1. Đăng nhập, nhận JWT"| AUTH["Auth Service (FastAPI)"]
-    FE -->|"2. Gọi API kèm JWT"| CORE["Core API (FastAPI)"]
-    FE -->|"3. Run"| RUN["Run Service (FastAPI)"]
-    FE -->|"4. Submit"| JUDGE_API["Judge API (FastAPI)"]
+    U["Người dùng (Guest / User / Admin)"] --> FE["Frontend (Next.js + Monaco Editor)"]
+    FE -->|"1. Đăng nhập, nhận JWT"| AUTH["Auth Service (Go + chi)"]
+    FE -->|"2. Gọi API kèm JWT"| CORE["Core API (Go + chi)"]
+    FE -->|"3. Run"| RUN["Run Service (Go + chi)"]
+    FE -->|"4. Submit"| JUDGE_API["Judge API (Go + chi)"]
     AUTH --> AUTHDB[("PostgreSQL: Auth DB")]
     CORE --> DB[("PostgreSQL: Judge DB")]
     CORE -->|"Tra cứu user_id"| AUTH
@@ -108,11 +109,11 @@ flowchart TD
 
 | Thành phần | Công nghệ | Ghi chú |
 |---|---|---|
-| Frontend | React (hoặc Next.js), Monaco Editor, Axios | Responsive, tiếng Việt |
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2 | Mỗi service có OpenAPI riêng |
+| Frontend | Next.js App Router, TypeScript, Monaco Editor, Axios | Responsive, tiếng Việt |
+| Backend | Go, chi, pgx v5, sqlc, Goose, go-playground/validator | Mỗi service có OpenAPI riêng |
 | CSDL | PostgreSQL 16 (extension `pgcrypto`) | Hai DB: Auth DB và Judge DB |
 | Cache/Queue | Redis 7 | Kết quả Run, trạng thái job, rate limit, cache xếp hạng, cache tên user |
-| Hàng đợi chấm | Celery hoặc RQ trên Redis | Tách riêng worker |
+| Hàng đợi chấm | Asynq (Go) trên Redis | Tách riêng worker |
 | Sandbox | Docker (mỗi runtime một image) | Không mạng, giới hạn tài nguyên |
 | Triển khai | Docker Compose, GitHub Actions CI | |
 
@@ -162,10 +163,10 @@ flowchart TD
 
 | Package | Nội dung | Chủ sở hữu | Dùng bởi |
 |---|---|---|---|
-| `common-auth` | Dependency FastAPI xác thực JWT, đọc `role`, decorator `require_admin` | TV1 | Core API, Run, Judge, Auth |
-| `common-db` | Model SQLAlchemy cho toàn bộ bảng Judge DB, session factory, migration Alembic | TV3 | Core API, Run, Judge |
-| `common-levels` | Hàm `get_level_status(user_id, category_id)` và `is_level_unlocked(...)` (xem F08) | TV3 | Core API, Run, Judge |
-| `common-errors` | Lớp lỗi và handler theo định dạng lỗi mục 2.3 | TV1 | Mọi service |
+| `common-auth` | Go middleware xác thực JWT, đọc `role`, middleware `RequireAdmin` | TV1 — Quốc Thịnh | Core API, Run, Judge, Auth |
+| `common-db` | Kiểu dữ liệu và query sqlc cho Judge DB, pgx pool/transaction, migration SQL Goose | TV3 — Hiếu | Core API, Run, Judge |
+| `common-levels` | Hàm `get_level_status(user_id, category_id)` và `is_level_unlocked(...)` (xem F08) | TV3 — Hiếu | Core API, Run, Judge |
+| `common-errors` | Lớp lỗi và handler theo định dạng lỗi mục 2.3 | TV1 — Quốc Thịnh | Mọi service |
 
 ---
 
@@ -183,7 +184,7 @@ flowchart TD
 |---|---|---|
 | FR-01.1 | Đăng ký bằng email, username, mật khẩu; email và username duy nhất (không phân biệt hoa thường) | M |
 | FR-01.2 | Mật khẩu tối thiểu 8 ký tự, có chữ và số; lưu hash bcrypt/argon2 | M |
-| FR-01.3 | Đăng nhập trả `access_token` (15 phút) và `refresh_token` (7 ngày) | M |
+| FR-01.3 | Đăng nhập trả `access_token` (15 phút) trong JSON và `refresh_token` (7 ngày) qua cookie HttpOnly | M |
 | FR-01.4 | Làm mới token bằng refresh token; đăng xuất thu hồi refresh token | M |
 | FR-01.5 | Phân quyền User/Admin trong claim `role`; mọi service tự kiểm tra JWT bằng khóa dùng chung/JWKS | M |
 | FR-01.6 | Khóa/mở khóa tài khoản (`is_active`); tài khoản bị khóa không đăng nhập được | M |
@@ -228,7 +229,6 @@ flowchart TD
 // 200 OK
 {
   "access_token": "eyJhbGciOi...",
-  "refresh_token": "d5f1c0...",
   "token_type": "bearer",
   "expires_in": 900,
   "user": { "id": "0b8c7f3e-...-9a1d", "username": "an_nguyen", "role": "user" }
@@ -315,7 +315,7 @@ flowchart TD
 | FR-04.6 | Bài thuộc cấp chưa mở hiển thị biểu tượng khóa; API chi tiết bài trả 403 `LEVEL_LOCKED` | M |
 | FR-04.7 | Thử thách hằng ngày (`daily_challenges`): hiển thị bài của ngày hiện tại | C |
 
-**Lưu ý thiết kế:** mỗi bài thuộc đúng một `category_id`. `parent_id` của `problem_categories` chỉ dùng để nhóm hiển thị; tiến độ cấp độ tính theo từng category chứa bài.
+**Lưu ý thiết kế:** bài published phải thuộc đúng một `category_id` hợp lệ (schema cho phép NULL, API phải kiểm tra khi publish; không xóa category còn bài). `parent_id` của `problem_categories` chỉ dùng để nhóm hiển thị; tiến độ cấp độ tính theo từng category chứa bài.
 
 | Method | Đường dẫn | Mô tả | Quyền |
 |---|---|---|---|
@@ -357,7 +357,7 @@ flowchart TD
 | FR-05.1 | Mỗi cặp (bài, ngôn ngữ) có đúng một `code_templates` (`starter_code`, `file_name`) | M |
 | FR-05.2 | Monaco Editor: highlight cú pháp theo ngôn ngữ, tự thụt lề, đánh số dòng | M |
 | FR-05.3 | Nút **Reset về code mẫu** | M |
-| FR-05.4 | Tự lưu nháp theo (user, bài, ngôn ngữ) trong localStorage, khóa `cjp.draft.{problem}.{language}` | S |
+| FR-05.4 | Tự lưu nháp theo (user, bài, ngôn ngữ) trong localStorage, khóa `cjp.draft.{user_id}.{problem}.{language}` | S |
 | FR-05.5 | Bài `function`: starter code là chữ ký hàm theo `function_name`; `wrapper_code` do Judge ghép để đọc input và gọi hàm | M |
 | FR-05.6 | `wrapper_code` **không** được trả ra client | M |
 
@@ -502,9 +502,10 @@ flowchart TD
 
 **Tính `source_hash`:**
 
-```python
-import hashlib
-source_hash = hashlib.sha256(source_code.encode("utf-8")).hexdigest()  # 64 ký tự hex thường
+```go
+// import "crypto/sha256" và "encoding/hex"
+sum := sha256.Sum256([]byte(sourceCode))
+sourceHash := hex.EncodeToString(sum[:]) // UTF-8 nguyên bản, không trim/normalize
 ```
 
 **Ghi submission Accepted (idempotent):**
@@ -586,7 +587,7 @@ WHERE p.category_id = $2
   AND p.status      = 'published';
 ```
 
-**Quy tắc mở khóa:** cấp `easy` luôn mở; cấp `medium` mở khi `total = solved` của `easy` (hoặc `total = 0`); cấp `hard` mở khi `medium` hoàn thành tương tự.
+**Quy tắc mở khóa:** cấp `easy` luôn mở; cấp `medium` mở khi `total = solved` của `easy` (hoặc `total = 0`); cấp `hard` mở khi cả `easy` và `medium` hoàn thành. Luôn xét tất cả cấp trước để cấp rỗng không cho phép vượt cấp chưa giải.
 
 **Hạn chế đã biết:** vì tính động, nếu Admin thêm bài `published` mới vào cấp đã hoàn thành thì cấp sau của user có thể bị khóa lại. Giải pháp thay thế (bảng lưu trạng thái mở khóa) nằm ở mục 8.
 
@@ -773,7 +774,7 @@ Nếu `post_type = solution` và user chưa giải bài: `403 SOLUTION_NOT_ALLOW
 | FR-12.12 | Dashboard thống kê: số bài, số lượt giải, số user đã giải ít nhất một bài, bài giải nhiều nhất | C |
 | FR-12.13 | Quản lý thử thách hằng ngày (`daily_challenges`) | C |
 
-**Điều kiện publish một bài:** có ít nhất 1 sample, ít nhất 1 test ẩn `is_active`, ít nhất 1 ngôn ngữ trong `problem_languages`, và mỗi ngôn ngữ đều có `code_templates`.
+**Điều kiện publish một bài:** có category hợp lệ; bài function có function_name và wrapper phù hợp từng ngôn ngữ; có ít nhất 1 sample, ít nhất 1 test ẩn `is_active`, ít nhất 1 ngôn ngữ trong `problem_languages`, và mỗi ngôn ngữ đều có `code_templates`.
 
 | Method | Đường dẫn | Mô tả |
 |---|---|---|
@@ -832,12 +833,12 @@ Nếu `post_type = solution` và user chưa giải bài: `403 SOLUTION_NOT_ALLOW
 | NFR-03 | Bảo mật sandbox | Không mạng, không root, giới hạn CPU/RAM/số process/dung lượng file, hệ thống file chỉ đọc (trừ thư mục tạm), seccomp, hủy container sau khi chấm |
 | NFR-04 | Bảo mật web | Chống SQL Injection (tham số hóa), XSS (escape Markdown), CSRF, HTTPS, CORS chặt |
 | NFR-05 | Bảo vệ test ẩn | `problem_test_cases` chỉ Judge Worker và API admin đọc; không bao giờ trả qua API người học |
-| NFR-06 | Bảo mật dữ liệu | Hash mật khẩu, không log mật khẩu/token, validate input bằng Pydantic |
+| NFR-06 | Bảo mật dữ liệu | Hash mật khẩu, không log mật khẩu/token, validate input bằng Go request DTO và validator |
 | NFR-07 | Độ tin cậy | Ghi `submissions` và `user_problem_progress` trong một transaction (cùng thành công hoặc cùng rollback); lỗi hạ tầng trả IE |
-| NFR-08 | Toàn vẹn dữ liệu | Tuân thủ CHECK/UNIQUE/FK của schema; migration bằng Alembic; mọi khóa chính là UUID |
+| NFR-08 | Toàn vẹn dữ liệu | Tuân thủ CHECK/UNIQUE/FK của schema; migration bằng Goose; khóa định danh thực thể là UUID; bảng liên kết dùng khóa ghép theo schema |
 | NFR-09 | Mở rộng | Judge Worker tách riêng và tăng số worker được; thêm ngôn ngữ bằng image Docker + một dòng `programming_languages` |
 | NFR-10 | Dễ dùng | Giao diện tiếng Việt, responsive, trình soạn code thân thiện |
-| NFR-11 | Bảo trì | Chuẩn PEP8, coverage backend ≥ 60%, tài liệu OpenAPI/Swagger mỗi service |
+| NFR-11 | Bảo trì | gofmt, go vet, golangci-lint, coverage backend ≥ 60%, tài liệu OpenAPI/Swagger mỗi service |
 | NFR-12 | Tương thích | Chrome, Edge, Firefox, Safari bản mới |
 | NFR-13 | Quan sát | Log có `request_id`; theo dõi độ dài hàng đợi và thời gian chấm |
 
@@ -1016,7 +1017,7 @@ sequenceDiagram
     U->>FE: Nhập email, mật khẩu
     FE->>AU: POST /auth/login
     AU->>AU: Kiểm tra hash, is_active
-    AU-->>FE: access_token, refresh_token
+    AU-->>FE: access_token + Set-Cookie refresh_token (HttpOnly)
     FE->>CO: GET /categories (Bearer access_token)
     CO->>CO: Xác thực chữ ký JWT, đọc claim role
     CO-->>FE: Dữ liệu gói bài
@@ -1162,12 +1163,12 @@ Chi tiết từng nhiệm vụ, phụ thuộc, lộ trình sprint, quy tắc là
 
 | Thành viên | Vai trò Scrum | Phụ trách chính |
 |---|---|---|
-| TV1 | Product Owner | Auth Service (F01), Diễn đàn (F11, API và giao diện), admin user và kiểm duyệt diễn đàn, `common-auth`, `common-errors`, test plan |
-| TV2 | Scrum Master | Run Service, Judge API + Worker, sandbox (F06, F07), Leaderboard API (F10), kiểm thử end-to-end |
-| TV3 | Developer | Core API nội dung (F03, F04, F05, F08, F09, F12 nội dung), `common-db`, `common-levels`, kiểm thử bảo mật web |
-| TV4 | Developer | Frontend (F02 và giao diện các chức năng, Admin UI), trừ trang Diễn đàn và Hồ sơ |
+| TV1 — Quốc Thịnh | Product Owner | Auth Service (F01), Diễn đàn (F11, API và giao diện), admin user và kiểm duyệt diễn đàn, `common-auth`, `common-errors`, test plan |
+| TV2 — Tùng | Scrum Master | Run Service, Judge API + Worker, sandbox (F06, F07), Leaderboard API (F10), kiểm thử end-to-end |
+| TV3 — Hiếu | Developer | Core API nội dung (F03, F04, F05, F08, F09, F12 nội dung), `common-db`, `common-levels`, kiểm thử bảo mật web |
+| TV4 — Huy | Developer | Frontend (F02 và giao diện các chức năng, Admin UI), trừ trang Diễn đàn và Hồ sơ |
 
-| Chức năng | TV1 | TV2 | TV3 | TV4 |
+| Chức năng | TV1 — Quốc Thịnh | TV2 — Tùng | TV3 — Hiếu | TV4 — Huy |
 |---|---|---|---|---|
 | F01 Đăng ký / Đăng nhập | R | | | S |
 | F02 Landing page | S | | S | R |
@@ -1201,20 +1202,45 @@ R = chịu trách nhiệm chính, S = hỗ trợ (TV4 hỗ trợ ở đây nghĩ
 
 ---
 
-## 8. QUYẾT ĐỊNH THIẾT KẾ VÀ ĐIỂM CẦN TEAM XÁC NHẬN
+## 8. QUYẾT ĐỊNH THIẾT KẾ ĐÃ CHỐT — 04/11/2026
 
-Các điểm dưới đây được chọn để khớp nguyên trạng schema `coding_judge_schema.sql`. Team review và ghi quyết định vào cột cuối.
+Các điểm dưới đây được chọn để khớp nguyên trạng schema `coding_judge_schema.sql`. Các quyết định dưới đây được chốt theo yêu cầu của chủ dự án; thay đổi sau này phải có ADR và đối chiếu task bị ảnh hưởng.
 
 | # | Quyết định hiện tại | Phương án thay thế (cần sửa schema) | Team chốt |
 |---|---|---|---|
-| 1 | Cấp độ = `difficulty` (3 cấp); gói bài = `problem_categories` | Thêm bảng cấp độ nếu cần hơn 3 cấp hoặc tên cấp riêng | |
-| 2 | Lịch sử chỉ có submission Accepted | Lưu mọi submission (bỏ ràng buộc `verdict = 'accepted'`) để thống kê tỉ lệ AC và rejudge | |
-| 3 | Mở khóa cấp tính động; thêm bài mới có thể khóa lại cấp sau | Thêm bảng lưu `unlocked_at` theo (user, gói, cấp) | |
-| 4 | Xếp hạng theo số bài giải, đồng số liệu thì đồng hạng | Thêm trường điểm cho bài và quy tắc đồng điểm theo thời gian | |
-| 5 | Bài SQL/Linux ngoài v1.0 | Mở rộng CHECK của `execution_mode` và bổ sung loại Judge | |
-| 6 | Bỏ Run với input tùy chỉnh (Run chỉ chạy sample) | Cho phép custom input, kết quả chỉ ở Redis, không ghi DB | |
-| 7 | Nháp code và ngôn ngữ ưa thích lưu localStorage | Thêm bảng draft và cột ưa thích | |
-| 8 | Không có rejudge ở v1.0 | Cần lưu bài sai và phiên bản test (`problem_test_case_sets`) | |
-| 9 | Diễn đàn: chỉ like bài viết; không tag riêng, không báo cáo vi phạm | Thêm bảng like bình luận, tag bài viết, báo cáo | |
-| 10 | Kiến trúc nhiều service (Auth, Core, Run, Judge) | Gộp thành modular monolith nếu team thiếu nhân lực vận hành | |
-| 11 | `daily_challenges` để mức Could (có trong schema, không có trong 12 chức năng gốc) | Bỏ nếu không cần | |
+| 1 | Cấp độ = `difficulty` (3 cấp); gói bài = `problem_categories` | Thêm bảng cấp độ nếu cần hơn 3 cấp hoặc tên cấp riêng | Giữ 3 cấp easy/medium/hard theo category chứa bài; parent chỉ nhóm hiển thị. |
+| 2 | Lịch sử chỉ có submission Accepted | Lưu mọi submission (bỏ ràng buộc `verdict = 'accepted'`) để thống kê tỉ lệ AC và rejudge | Chỉ lưu AC; không tính tỷ lệ AC từ DB và không lưu bài sai ở v1. |
+| 3 | Mở khóa cấp tính động; thêm bài mới có thể khóa lại cấp sau | Thêm bảng lưu `unlocked_at` theo (user, gói, cấp) | Tính động, không thêm bảng. Mở cấp N chỉ khi tất cả cấp trước hoàn thành; cấp rỗng không chặn. Chấp nhận khóa lại khi thêm bài. |
+| 4 | Xếp hạng theo số bài giải, đồng số liệu thì đồng hạng | Thêm trường điểm cho bài và quy tắc đồng điểm theo thời gian | RANK theo số bài giảm dần, rồi tổng AC khác mã giảm dần; đồng số liệu đồng hạng. Không dùng points để xếp hạng. |
+| 5 | Bài SQL/Linux ngoài v1.0 | Mở rộng CHECK của `execution_mode` và bổ sung loại Judge | SQL/Linux ngoài phạm vi hạn 22/11. Runtime bài nộp: Python 3.12, C++17, Java 17. |
+| 6 | Bỏ Run với input tùy chỉnh (Run chỉ chạy sample) | Cho phép custom input, kết quả chỉ ở Redis, không ghi DB | Run chỉ sample, Redis TTL 10 phút, không custom input và không ghi PostgreSQL. |
+| 7 | Nháp code và ngôn ngữ ưa thích lưu localStorage | Thêm bảng draft và cột ưa thích | localStorage theo user+bài+ngôn ngữ; không lưu token trong localStorage. Xóa/chuyển namespace nháp khi đổi tài khoản. |
+| 8 | Không có rejudge ở v1.0 | Cần lưu bài sai và phiên bản test (`problem_test_case_sets`) | Không rejudge; khóa test sau lần publish đầu tiên, kể cả archived; clone draft để đổi bộ test. |
+| 9 | Diễn đàn: chỉ like bài viết; không tag riêng, không báo cáo vi phạm | Thêm bảng like bình luận, tag bài viết, báo cáo | Like bài viết, bình luận một cấp; không like bình luận/tag riêng/report. Chống XSS bắt buộc. |
+| 10 | Kiến trúc nhiều service (Auth, Core, Run, Judge) | Gộp thành modular monolith nếu team thiếu nhân lực vận hành | Giữ Auth/Core/Run/Judge API và Worker riêng trong một monorepo Go, Docker Compose; 2 DB. Không thêm gateway service tùy biến. |
+| 11 | `daily_challenges` để mức Could (có trong schema, không có trong 12 chức năng gốc) | Bỏ nếu không cần | Daily challenge là Could, không cam kết trước 22/11; giữ bảng SQL, triển khai khi Must đã nghiệm thu. |
+
+### 8.1 Stack và ranh giới triển khai
+
+- Frontend: Next.js App Router + TypeScript; Monaco là Client Component, tải động không SSR. Landing có thể SSR; không cache chung dữ liệu người dùng/tiến độ.
+- Backend: Go + chi; pgx v5 + sqlc, Goose SQL migration; request DTO/validator; OpenAPI 3 là hợp đồng. Pin phiên bản cụ thể của Go/Node/Next và dependencies trong task nền tảng sau kiểm tra tương thích; không dùng image latest.
+- Go backend sở hữu nghiệp vụ. Next.js chỉ giao diện và proxy cùng origin /api/v1 về đúng service; không viết lại nghiệp vụ trong Server Actions/route handlers.
+- Asynq trên Redis; queue run và submit tách concurrency. Worker có giới hạn thời gian, xử lý giao lại job idempotent. Lỗi hạ tầng hết retry trả IE, giải phóng cooldown cho phép user thử lại; lỗi bài nộp không retry.
+- PostgreSQL 16, Redis 7, Docker Compose. Backend Go không thay đổi Python/C++/Java trong sandbox. API process không được quyền Docker socket; chỉ execution worker tin cậy dùng Docker, mã người học không thấy socket, secrets hay test khác.
+- Một Go module ở gốc, shared package dưới packages; mỗi service có cmd và internal. Thư mục common-auth/common-db/common-levels/common-errors giữ tên sở hữu, package identifier Go dùng commonauth/commondb/commonlevels/commonerrors.
+- JWT RS256; Auth giữ private key, service khác chỉ public key, verify alg/issuer/audience/exp. Access token ở memory client; refresh token cookie HttpOnly/Secure/SameSite, rotation và revoke ở Auth DB. Refresh/logout kiểm tra Origin và CSRF; Axios refresh single-flight, retry tối đa một lần.
+- Mật khẩu bcrypt. API service-to-service dùng service token riêng, không lấy access token người dùng làm quyền nội bộ; không commit secret.
+- Giữ coding_judge_schema.sql nguyên trạng làm baseline Judge DB; Auth DB có migration riêng. Chỉ migration runner chạy Goose, không để mỗi service tự migrate đồng thời.
+
+### 8.2 Các điểm schema cần enforce ở backend
+
+- Khóa test/sample/template/ngôn ngữ/execution_mode sau lần publish đầu tiên (published_at khác NULL), kể cả archived; chỉnh mô tả được nhưng không đổi nghĩa chấm. Clone bản mới để thay test.
+- schema không khóa cấp hoặc giới hạn bình luận: common-levels enforce mọi endpoint liên quan; parent comment phải cùng bài, chưa bị xóa và là comment gốc.
+- execute_code là dữ liệu nội bộ chỉ admin tin cậy; v1 không thực thi override từ trường này (từ chối giá trị khác rỗng trong API tạo/sửa). Wrapper duy nhất theo bài/ngôn ngữ; không trả wrapper/execute_code qua API learner.
+- Hàm source_hash chỉ hash mã người dùng UTF-8 nguyên bản, không hash wrapper; lưu đúng source_code đó. Transaction AC và tiến độ theo unique constraint sẵn có, kiểm tra race bằng test.
+- Bảng xếp hạng tuần/tháng giữ ngữ nghĩa SRS: bài được giải lần đầu trong kỳ, accepted_count là tổng của các bài đó; không gọi đây là số lượt AC xảy ra trong kỳ. Ranh giới kỳ UTC.
+- Runtime bị kill do timeout/OOM phải phân loại TLE/MLE trước RE; độ ưu tiên CE > RE > TLE > MLE > WA chỉ áp dụng sau phân loại từng test.
+
+### 8.3 Phạm vi và hạn nộp
+
+Hạn nộp 22/11/2026, đóng tính năng 19/11 21:00; 20–21/11 kiểm thử/sửa lỗi. Must bắt buộc; Should làm sau Must, Could ngoài cam kết. Lịch 11 tuần trong tài liệu cũ là tham chiếu phân rã, không phải lịch thực thi. Lịch thực thi xem 04_KE_HOACH_TICH_HOP.md. Chưa có số giờ làm/ngày nên cần báo rủi ro, không bảo đảm toàn phạm vi chỉ bằng việc rút ngắn lịch.

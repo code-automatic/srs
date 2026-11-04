@@ -1,11 +1,13 @@
 # BACKLOG USER STORY THEO SPRINT
 
+**Thành viên:** TV1 = Quốc Thịnh; TV2 = Tùng (Hiếu hỗ trợ); TV3 = Hiếu; TV4 = Huy (Quốc Thịnh hỗ trợ). Giữ nguyên mã story/task và owner chính.
+
 ## Dự án: Coding Judge Platform
 
 | | |
 |---|---|
-| **Phiên bản** | 1.4 (khớp SRS 1.4 và bảng phân công 1.4, team 4 người) |
-| **Ngày cập nhật** | 02/11/2026 |
+| **Phiên bản** | 1.5 (khớp SRS 1.5 và bảng phân công 1.5, team 4 người) |
+| **Ngày cập nhật** | 04/11/2026 |
 | **Trạng thái** | Bản thảo để team review |
 | **Tài liệu gốc** | `01_SRS_Coding_Judge_Platform.md`, `02_PHAN_CONG_NHIEM_VU.md` |
 
@@ -19,7 +21,7 @@
 
 | Mã | User story | FR | Nhiệm vụ | Ưu tiên | Tiêu chí chấp nhận |
 |---|---|---|---|---|---|
-| US-01 | Là lập trình viên, tôi muốn dựng DB bằng một lệnh từ schema để mọi người dùng cùng một cấu trúc dữ liệu | NFR-08 | T3-01 | M | `alembic upgrade head` tạo đủ bảng, view `leaderboard` và ràng buộc của `coding_judge_schema.sql` |
+| US-01 | Là lập trình viên, tôi muốn dựng DB bằng một lệnh từ schema để mọi người dùng cùng một cấu trúc dữ liệu | NFR-08 | T3-01 | M | `docker compose run --rm migrate-judge up` tạo đủ bảng, view `leaderboard` và ràng buộc của `coding_judge_schema.sql` |
 | US-02 | Là lập trình viên, tôi muốn có định dạng lỗi chung để FE xử lý lỗi thống nhất | SRS 2.3 | T1-05 | M | Mọi service trả lỗi theo `{error:{code,message,details}}` |
 | US-03 | Là lập trình viên, tôi muốn có khung Frontend và Axios đã cấu hình token để bắt đầu làm giao diện | NFR-10 | T4-01 | M | `npm run dev` chạy; interceptor tự refresh token một lần khi 401 |
 | US-04 | Là cả team, chúng tôi muốn chạy toàn bộ hệ thống bằng Docker Compose và CI để tích hợp liên tục | NFR-11 | (Git Lead, TV2) | M | `docker compose up` khởi động Postgres, Redis, các service; CI chạy lint và test |
@@ -37,7 +39,7 @@
 | US-07 | Là người dùng, tôi muốn đăng nhập và duy trì phiên để không phải đăng nhập lại liên tục | FR-01.3, FR-01.4 | T1-02, T1-03, T4-03 | M | Đăng nhập trả access và refresh token; token hết hạn tự refresh một lần; đăng xuất thu hồi refresh token |
 | US-08 | Là hệ thống, tôi muốn mọi service xác thực JWT bằng cùng một thư viện để phân quyền nhất quán | FR-01.5 | T1-04 | M | User thường gọi API admin nhận 403; token sai chữ ký nhận 401 |
 | US-09 | Là khách, tôi muốn xem trang giới thiệu có nút đăng ký/đăng nhập để hiểu hệ thống làm gì | FR-02.1, FR-02.2, FR-02.4 | T4-02 | M | Nút đổi thành "Vào luyện tập" khi đã đăng nhập; hiển thị tốt trên mobile, tablet, desktop |
-| US-10 | Là lập trình viên backend, tôi muốn có bộ model SQLAlchemy dùng chung để không viết lặp | NFR-08 | T3-02 | M | Core, Run, Judge cùng import `common-db`; truy vấn mẫu chạy được |
+| US-10 | Là lập trình viên backend, tôi muốn có bộ model Go/sqlc dùng chung để không viết lặp | NFR-08 | T3-02 | M | Core, Run, Judge cùng import `common-db`; truy vấn mẫu chạy được |
 | US-11 | Là Judge, tôi muốn chạy một file Python trong container có giới hạn để nền tảng chấm bài sẵn sàng | NFR-03 | T2-01 | M | Chạy được mã với input; vượt thời gian bị dừng; không truy cập được mạng; không chạy bằng root |
 
 ---
@@ -146,3 +148,7 @@
 | **M** (Must) | Bắt buộc có trong bản demo | Không cắt; huy động thành viên khác hỗ trợ |
 | **S** (Should) | Nên có | Làm sau khi xong Must của sprint |
 | **C** (Could) | Có thể bỏ | Cắt đầu tiên: US-58 (phần thống kê), US-60, US-64 |
+
+## Lịch thực thi v1.5
+
+Các Sprint 0–5 phía trên giữ nhóm user story để truy vết, không dùng mốc tuần cũ cho hạn nộp. Thực thi: 04–07/11 nền tảng; 08–11/11 Run/editor/Admin; 12–15/11 Submit/tiến độ; 16–19/11 cộng đồng; 20–22/11 kiểm thử/nộp. Xem 04_KE_HOACH_TICH_HOP.md. US-04: TV3 chính, TV2 hỗ trợ. US-05 nghiệm thu mục 8 đã chốt. US-10 dùng Go/sqlc và pgx, không ORM Python.
