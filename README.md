@@ -20,7 +20,7 @@ trong backend; đường dẫn tương đối được điều chỉnh cho repos
 
 ## Trạng thái nghiệm thu
 
-Envelope đã triển khai và merge qua PR #1. Ownership và compatibility đã có
+Envelope đã triển khai và merge qua [backend PR #1](https://github.com/code-automatic/codjingrank-backend/pull/1). Ownership và compatibility đã có
 contract, nhưng ownership enforcement và Gateway `/api/v1` chưa hoàn tất.
 OpenAPI là target để mock, không phải danh sách API live. Avatar/bio đã có
 trong schema; Go DTO/query/handler còn cần tích hợp UUID/schema mới.
@@ -45,4 +45,5 @@ DECISIONS, schema và OpenAPI hiện hành. Không coi bảng kế hoạch là b
 npx @stoplight/prism-cli mock docs/openapi_fe.yaml -p 4010
 ```
 
-Chỉ đồng bộ file local; chưa commit, push hay mở PR trong repository SRS.
+Lịch sử commit và PR của repository SRS ghi nhận việc đồng bộ; tài liệu
+không triển khai thêm tính năng backend.
