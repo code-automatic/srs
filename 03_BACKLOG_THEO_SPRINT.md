@@ -1,3 +1,5 @@
+> **Lưu ý đồng bộ 08/11/2026:** Đây là kế hoạch lịch sử, chưa khớp phân công Excel đã chốt. BE/DevOps: Trung Hiếu; FE/QA: Hoàng Huy, Quốc Thịnh, Thanh Tùng. Tiêu chí kỹ thuật mâu thuẫn phải theo [DECISIONS](docs/DECISIONS.md), [schema](schema.sql) và [API contract](docs/FRONTEND_API_CONTRACT.md); tài liệu này không xác nhận tính năng đã hoàn thành.
+
 # BACKLOG USER STORY THEO SPRINT
 
 **Thành viên:** TV1 = Quốc Thịnh; TV2 = Tùng (Hiếu hỗ trợ); TV3 = Hiếu; TV4 = Huy (Quốc Thịnh hỗ trợ). Giữ nguyên mã story/task và owner chính.
@@ -6,9 +8,9 @@
 
 | | |
 |---|---|
-| **Phiên bản** | 1.5 (khớp SRS 1.5 và bảng phân công 1.5, team 4 người) |
-| **Ngày cập nhật** | 04/11/2026 |
-| **Trạng thái** | Bản thảo để team review |
+| **Phiên bản** | 2.0 (khớp SRS 2.0 và bảng phân công 2.0, team 4 người) |
+| **Ngày cập nhật** | 05/11/2026 |
+| **Trạng thái** | Backlog đích; chưa phải trạng thái đã triển khai |
 | **Tài liệu gốc** | `01_SRS_Coding_Judge_Platform.md`, `02_PHAN_CONG_NHIEM_VU.md` |
 
 **Cách đọc:** mỗi user story có mã `US-xx`, trỏ về yêu cầu `FR-xx.y` trong SRS và nhiệm vụ `Tn-xx` trong bảng phân công. Cột **Tiêu chí chấp nhận** là điều kiện để PO nghiệm thu. Ưu tiên theo SRS: **M** (Must), **S** (Should), **C** (Could).
@@ -39,7 +41,7 @@
 | US-07 | Là người dùng, tôi muốn đăng nhập và duy trì phiên để không phải đăng nhập lại liên tục | FR-01.3, FR-01.4 | T1-02, T1-03, T4-03 | M | Đăng nhập trả access và refresh token; token hết hạn tự refresh một lần; đăng xuất thu hồi refresh token |
 | US-08 | Là hệ thống, tôi muốn mọi service xác thực JWT bằng cùng một thư viện để phân quyền nhất quán | FR-01.5 | T1-04 | M | User thường gọi API admin nhận 403; token sai chữ ký nhận 401 |
 | US-09 | Là khách, tôi muốn xem trang giới thiệu có nút đăng ký/đăng nhập để hiểu hệ thống làm gì | FR-02.1, FR-02.2, FR-02.4 | T4-02 | M | Nút đổi thành "Vào luyện tập" khi đã đăng nhập; hiển thị tốt trên mobile, tablet, desktop |
-| US-10 | Là lập trình viên backend, tôi muốn có bộ model Go/sqlc dùng chung để không viết lặp | NFR-08 | T3-02 | M | Core, Run, Judge cùng import `common-db`; truy vấn mẫu chạy được |
+| US-10 | Là lập trình viên backend, tôi muốn có model/query Go dùng pgx dùng chung để không viết lặp | NFR-08 | T3-02 | M | Core, Run, Submission, Forum và AI dùng `common-db`; truy vấn mẫu chạy được |
 | US-11 | Là Judge, tôi muốn chạy một file Python trong container có giới hạn để nền tảng chấm bài sẵn sàng | NFR-03 | T2-01 | M | Chạy được mã với input; vượt thời gian bị dừng; không truy cập được mạng; không chạy bằng root |
 
 ---
@@ -75,7 +77,7 @@
 
 | Mã | User story | FR | Nhiệm vụ | Ưu tiên | Tiêu chí chấp nhận |
 |---|---|---|---|---|---|
-| US-28 | Là người học, tôi muốn Submit để chạy toàn bộ test và nhận verdict | FR-07.1, FR-07.2, FR-07.3 | T2-07, T2-08, T4-08 | M | Trạng thái Pending → Running → Done; hiện verdict và số test qua; verdict khác AC không tạo dòng `submissions` |
+| US-28 | Là người học, tôi muốn Submit để chạy toàn bộ test và nhận verdict | FR-07.1, FR-07.2, FR-07.3 | T2-07, T2-08, T4-08 | M | Trạng thái Pending → Running → verdict cuối; hiện verdict và số test qua; giữ cơ chế lưu submission hiện tại |
 | US-29 | Là người học, tôi muốn thấy đúng loại lỗi (CE, RE, TLE, MLE, WA) để biết sửa gì | FR-07.3 | T2-08 | M | Mỗi loại lỗi được tái hiện bằng bài mẫu và trả đúng verdict |
 | US-30 | Là người học, tôi muốn test ẩn không bị lộ đáp án | FR-07.7, NFR-05 | T2-08, T3-05 | M | API người học không bao giờ trả `problem_test_cases`; chỉ hiện pass/fail |
 | US-31 | Là người học, tôi muốn bài Accepted được lưu để xem lại sau | FR-07.4, FR-07.5 | T2-09 | M | AC mới tạo một dòng `submissions` và upsert `user_problem_progress` trong một transaction; lỗi giữa chừng rollback cả hai |
@@ -139,6 +141,18 @@
 | US-71 | Là team, chúng tôi muốn đo hiệu năng chấm | NFR-01, NFR-02 | T2-19, T2-14 | S | 20 submission đồng thời; bài chuẩn có kết quả dưới 10 giây |
 | US-72 | Là PO, tôi muốn nghiệm thu cuối cùng và chốt bản demo | | T1-11, T1-12 | M | Danh sách FR mức Must đều đạt; SRS cập nhật phiên bản cuối |
 
+## BỔ SUNG V2 — FORUM VÀ AI REVIEW
+
+Các story dưới đây bổ sung cho backlog nguồn. AI review chưa implement và chỉ
+được coi là hoàn thành khi có migration, service-to-service contract và test.
+
+| Mã | User story | FR | Nhiệm vụ | Ưu tiên | Tiêu chí chấp nhận |
+|---|---|---|---|---|---|
+| US-73 | Là hệ thống, tôi muốn tự tạo AI review sau Accepted | FR-13.1–13.3 | T2-20, T3-17 | M | Accepted tạo tối đa một review; Run/WA/CE không tạo; AI lỗi không đổi verdict/rank |
+| US-74 | Là người học, tôi muốn xem điểm và nhận xét AI của bài Accepted | FR-13.2, FR-13.4 | T4-13 | M | Owner xem được queued/running/completed/failed; user khác nhận 404/403 |
+| US-75 | Là team, chúng tôi muốn diễn đàn độc lập với judge và repo | FR-11.1–11.10 | T1-13–T1-16, T1-19 | M | Post/comment/like/moderation chạy qua Forum service; không gọi GitHub/repository |
+| US-76 | Là frontend, tôi muốn contract phân biệt API live và API đích | NFR-08 | T1-12, T4-13 | M | Client không gọi `/api/v1` AI/Forum/Leaderboard trước khi backend có contract test |
+
 ---
 
 ## TỔNG KẾT PHẠM VI THEO ƯU TIÊN
@@ -149,6 +163,10 @@
 | **S** (Should) | Nên có | Làm sau khi xong Must của sprint |
 | **C** (Could) | Có thể bỏ | Cắt đầu tiên: US-58 (phần thống kê), US-60, US-64 |
 
-## Lịch thực thi v1.5
+## Lịch thực thi v2.0
 
-Các Sprint 0–5 phía trên giữ nhóm user story để truy vết, không dùng mốc tuần cũ cho hạn nộp. Thực thi: 04–07/11 nền tảng; 08–11/11 Run/editor/Admin; 12–15/11 Submit/tiến độ; 16–19/11 cộng đồng; 20–22/11 kiểm thử/nộp. Xem 04_KE_HOACH_TICH_HOP.md. US-04: TV3 chính, TV2 hỗ trợ. US-05 nghiệm thu mục 8 đã chốt. US-10 dùng Go/sqlc và pgx, không ORM Python.
+Các Sprint 0–5 chỉ giữ nhóm story để truy vết. Lịch có hiệu lực: 06–07/11
+nền tảng/schema; 08–11/11 Run/editor/admin; 12–15/11 Submit/progress/AI schema;
+16–19/11 leaderboard/Forum/AI integration và đóng tính năng; 20–21/11
+kiểm thử/sửa lỗi; 22/11 nộp. Không có story tạo repository/GitHub. Xem
+`04_KE_HOACH_TICH_HOP.md`; backend bám Go `net/http`, pgx và Redis list queue.

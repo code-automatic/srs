@@ -1,12 +1,14 @@
+> **Lưu ý đồng bộ 08/11/2026:** Đây là kế hoạch lịch sử, chưa khớp phân công Excel đã chốt. BE/DevOps: Trung Hiếu; FE/QA: Hoàng Huy, Quốc Thịnh, Thanh Tùng. Tiêu chí kỹ thuật mâu thuẫn phải theo [DECISIONS](docs/DECISIONS.md), [schema](schema.sql) và [API contract](docs/FRONTEND_API_CONTRACT.md); tài liệu này không xác nhận tính năng đã hoàn thành.
+
 # BẢNG PHÂN CÔNG NHIỆM VỤ
 
 ## Dự án: Coding Judge Platform (team 4 thành viên)
 
 | | |
 |---|---|
-| **Phiên bản** | 1.5 (khớp SRS 1.5 và backlog 1.5) |
-| **Ngày cập nhật** | 04/11/2026 |
-| **Trạng thái** | Bản thảo để team review |
+| **Phiên bản** | 2.0 (khớp SRS 2.0 và backlog 2.0) |
+| **Ngày cập nhật** | 05/11/2026 |
+| **Trạng thái** | Kế hoạch đích; chưa phải trạng thái triển khai |
 | **Tài liệu gốc** | `01_SRS_Coding_Judge_Platform.md` |
 | **Tài liệu đi kèm** | `03_BACKLOG_THEO_SPRINT.md` |
 
@@ -14,7 +16,7 @@
 
 **Thay đổi so với bản 5 người (1.3):** vai trò TV5 (Social + QA) được chia lại cho TV1, TV2, TV3: Diễn đàn và kiểm thử do TV1 đảm nhận, Bảng xếp hạng do TV2 (sau khi xong lõi Judge), kiểm thử end-to-end và bảo mật chia cho TV2 và TV3. Một số giao diện chuyển từ TV4 sang TV1 để cân tải.
 
-*Giả định: team 4 người làm theo Scrum, 5 sprint × 2 tuần sau Sprint 0 (1 tuần). Vì ít người hơn, các nhiệm vụ mức **Could** sẽ cắt trước khi trễ (mục 7).*
+*Giả định: team 4 người làm theo Scrum trong cửa sổ 06/11/2026–22/11/2026. Các nhiệm vụ mức **Could** sẽ cắt trước khi trễ. Run/Submit/Judge giữ cơ chế cũ; repo/GitHub không còn là nhiệm vụ sản phẩm.*
 
 ---
 
@@ -23,7 +25,7 @@
 | TV | Họ tên | Vai trò Scrum | Vai trò kỹ thuật | Sở hữu (owner) |
 |---|---|---|---|---|
 | TV1 | Quốc Thịnh | Product Owner | Backend (Auth, Forum) + Frontend (Forum, Hồ sơ) | Auth Service, Forum API, `common-auth`, `common-errors`, test plan |
-| TV2 | Tùng | Scrum Master | Judge Engine + Leaderboard | Run Service, Judge API, Judge Worker, sandbox images, Leaderboard API |
+| TV2 | Tùng | Scrum Master | Judge Engine + Leaderboard + AI integration | Run Service, Submission Worker, sandbox, Leaderboard API, gọi AI sau Accepted |
 | TV3 | Hiếu | Developer | Backend (Core Problem) | Core API (nội dung bài), `common-db`, `common-levels`, migration, seed |
 | TV4 | Huy | Developer | Frontend | Ứng dụng Next.js + TypeScript (trừ trang Diễn đàn và Hồ sơ) |
 
@@ -56,6 +58,7 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | F09 Lịch sử nộp bài | | | R | S (UI) |
 | F10 Bảng xếp hạng | S (user lookup) | R (API) | | S (UI) |
 | F11 Diễn đàn | R (API + UI) | | | S (component dùng chung) |
+| F13 AI review | S (policy) | R (trigger/integration) | S (schema/repository) | S (UI đọc kết quả) |
 | F12 Quản trị | R (user, kiểm duyệt diễn đàn) | | R (nội dung) | R (UI) |
 
 ---
@@ -66,7 +69,7 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
-| T1-01 | Thiết kế Auth DB (users, refresh_tokens, password_resets) và migration | FR-01.1 | 0 | Migration Goose của Auth DB | |
+| T1-01 | Thiết kế Auth DB (users, refresh_tokens, password_resets) và migration SQL | FR-01.1 | 0 | Migration Auth DB theo tool của repository | |
 | T1-02 | API đăng ký, đăng nhập, hash mật khẩu, cấp JWT | FR-01.1–01.3 | 1 | `/auth/register`, `/auth/login` chạy được | T1-01 |
 | T1-03 | Refresh token, đăng xuất, thu hồi token | FR-01.4 | 1 | `/auth/refresh`, `/auth/logout` | T1-02 |
 | T1-04 | Package `common-auth`: middleware xác thực JWT, `RequireAdmin` | FR-01.5 | 1 | Go package import được trong cùng module; `go test ./...` pass | T1-02 |
@@ -110,13 +113,14 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T2-17 | API xếp hạng: `/leaderboard`, `/leaderboard/me` | FR-10.1–10.4, FR-10.6 | 4 | Hai endpoint chạy được | T2-16 |
 | T2-18 | Cache Redis xếp hạng và tên user; ghép username từ Auth | FR-10.2, FR-10.5 | 4 | Cache hoạt động, có fallback username | T2-17, T1-06 |
 | T2-19 | Kiểm thử tích hợp end-to-end: đăng nhập → Run → Submit → Level up → Leaderboard | | 3–5 | Kịch bản chạy lặp lại được, báo cáo | T2-09, T2-17 |
+| T2-20 | Tích hợp worker → `ai_service` sau Accepted, idempotency và timeout | FR-13.1–13.3 | 4–5 | AI job chỉ phát sinh sau Accepted; lỗi AI không đổi verdict/rank | T2-09, T3-17 |
 
 ### TV3 — Hiếu: Core API (nội dung bài tập)
 
 | Mã | Nhiệm vụ | FR | Sprint | Đầu ra | Phụ thuộc |
 |---|---|---|---|---|---|
-| T3-01 | Goose migration nhập `coding_judge_schema.sql` nguyên trạng | NFR-08 | 0 | DB dựng được bằng một lệnh | |
-| T3-02 | Package `common-db`: model Go/sqlc cho toàn bộ bảng | NFR-08 | 1 | Package dùng chung cho Core, Run, Judge | T3-01 |
+| T3-01 | Migration/schema đích: Package, Level, progress, leaderboard, forum, AI; loại repo/GitHub khỏi model mới | NFR-08, FR-13 | 0–1 | DB migration có rollback/seed kiểm tra được | |
+| T3-02 | Package `common-db`: model/query Go dùng pgx cho các bảng mới | NFR-08 | 1–2 | Package dùng chung cho Core, Run, Submission, Forum, AI | T3-01 |
 | T3-03 | Model/CRUD nội bộ cho `user_problem_progress`, `submissions` | FR-07.4–07.6 | 2 | Hàm repository dùng bởi Judge | T3-02 |
 | T3-04 | API ngôn ngữ (public và theo bài) | FR-03.1–03.2 | 2 | `/languages`, `/problems/{slug}/languages` | T3-02 |
 | T3-05 | API gói bài, danh sách/lọc/chi tiết bài; không bao giờ trả test ẩn | FR-04.1–04.5 | 2 | `/categories`, `/problems`, `/problems/{slug}` | T3-02, T1-04 |
@@ -126,11 +130,12 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T3-09 | API `/categories/{slug}/levels` và chặn 403 `LEVEL_LOCKED` ở chi tiết bài | FR-04.6, FR-08.6 | 3 | Trả đúng 3 cấp và trạng thái | T3-08 |
 | T3-10 | Admin API: samples, test ẩn, khóa sửa sau publish, ngôn ngữ, template | FR-12.5–12.7 | 2–3 | `/admin/problems/{id}/samples`, `/test-cases`, ... | T3-07 |
 | T3-11 | Điều kiện publish và nhân bản bài (clone) | FR-12.4, FR-12.11 | 3 | `/publish`, `/clone` | T3-10 |
-| T3-12 | API lịch sử Accepted, chi tiết submission, kiểm quyền | FR-09.1–09.5 | 3 | `/me/submissions`, `/submissions/{id}` | T3-03 |
+| T3-12 | API lịch sử submission, chi tiết và kiểm quyền | FR-09.1–09.5 | 3 | `/me/submissions`, `/submissions/{id}` | T3-03 |
 | T3-13 | API landing, thử thách hằng ngày | FR-02.3, FR-04.7 | 4 | `/public/landing`, `/daily-challenge` | T1-06 |
 | T3-14 | Admin API: xem submission, thống kê, daily challenge | FR-12.10, FR-12.12–12.13 | 4 | `/admin/submissions`, `/admin/stats` | T3-12 |
 | T3-15 | Seed dữ liệu mẫu: tối thiểu 3 gói × 3 cấp × vài bài, kèm test (cả team cùng soạn bài) | | 2–5 | Script seed chạy lặp lại được | T3-10 |
 | T3-16 | Kiểm thử bảo mật web: phân quyền, lộ test ẩn, XSS, rate limit | NFR-04, NFR-05 | 5 | Báo cáo bảo mật, lỗi đã sửa | T1-15, T2-11 |
+| T3-17 | Repository/schema cho `ai_reviews`, trạng thái và owner check | FR-13.1–13.5 | 3–4 | Migration + query đọc review; không lưu AI score vào leaderboard | T3-01, T3-02 |
 
 ### TV4 — Huy: Frontend
 
@@ -143,11 +148,12 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 | T4-05 | Danh sách/lọc/tìm bài; trang chi tiết bài | FR-04.3–04.5 | 2 | Trang bài | T3-05 |
 | T4-06 | Trang làm bài: Monaco, chọn ngôn ngữ, nạp starter code, Reset, nháp localStorage | FR-03, FR-05 | 2 | Editor hoạt động | T3-04, T3-06 |
 | T4-07 | Nút Run + panel kết quả (polling) | FR-06 | 2 | Hiển thị từng sample | T2-04 |
-| T4-08 | Nút Submit + panel verdict (polling), hiệu ứng lên cấp | FR-07, FR-08.5 | 3 | Hiển thị verdict, level up | T2-07 |
+| T4-08 | Nút Submit + panel verdict (polling), hiệu ứng lên cấp | FR-07, FR-08.5 | 3 | Hiển thị verdict, level up; không chờ AI để xác nhận Accepted | T2-07 |
 | T4-09 | Lịch sử nộp bài, xem lại code, "Dùng lại code này" | FR-09 | 3 | Trang lịch sử | T3-12 |
 | T4-10 | Bảng xếp hạng (lọc kỳ/gói, hạng của tôi) | FR-10 | 4 | Trang xếp hạng | T2-17 |
 | T4-11 | Giao diện Admin: user, gói/bài, test, template, kiểm duyệt diễn đàn, thống kê | FR-12 | 3–5 | Bộ trang Admin | T3-07, T3-10, T1-07, T1-16 |
 | T4-12 | Responsive, trạng thái loading/lỗi, kiểm tra trên 4 trình duyệt | NFR-10, NFR-12 | 5 | Báo cáo kiểm tra | |
+| T4-13 | UI đọc AI review theo trạng thái queued/running/completed/failed | FR-13.2, FR-13.4 | 5 | Trang submission hiển thị score/findings khi API đích có | T3-17, T2-20 |
 
 *Trang Diễn đàn (T1-19) và Hồ sơ (T1-20) do TV1 làm, dùng bộ component và layout của T4-01.*
 
@@ -159,28 +165,43 @@ R = chịu trách nhiệm chính (backend/logic). S = hỗ trợ. Cột TV4 là 
 |---|---|---|---|
 | Mọi service | Package `common-auth` (xác thực JWT, `require_admin`) | TV1 | Cuối Sprint 1 |
 | Mọi service | Package `common-errors` | TV1 | Sprint 0 |
-| Core, Run, Judge, Forum | Package `common-db` (model Go/sqlc) | TV3 | Giữa Sprint 1 |
+| Core, Run, Submission, Forum, AI | Package `common-db` (model/query Go + pgx) | TV3 | 08/11 |
 | Core, Run, Judge | Package `common-levels` | TV3 | Giữa Sprint 2 |
 | Leaderboard, Landing | API `/internal/users` | TV1 | Sprint 2 |
 | Judge Worker | Hàm repository ghi `submissions`, `user_problem_progress` | TV3 | Đầu Sprint 3 |
 | Run, Judge | Cấu trúc `wrapper_code`, `execute_code` cho bài `function` | TV2 chốt, TV3 nhập dữ liệu | Sprint 2 |
 | Giao diện Diễn đàn, Hồ sơ (TV1) | Bộ component và layout dùng chung | TV4 (T4-01) | Cuối Sprint 1 |
 | Frontend | OpenAPI/mock cho Run, Submit, Leaderboard, Forum | TV2, TV3, TV1 | Sprint 0 (bản khung), cập nhật mỗi sprint |
+| Submission Worker, AI, Frontend | Contract `ai_reviews` và owner/status semantics | TV2, TV3, TV4 | 15/11 |
 
 **Quy tắc đổi hợp đồng:** thay đổi request/response của API đã chốt phải sửa OpenAPI, ghi vào changelog SRS và báo kênh chung trước khi merge.
 
 ---
 
-## 5. LỘ TRÌNH SPRINT
+## 5. LỘ TRÌNH SPRINT VÀ MỐC THỰC THI
+
+Các nhãn Sprint dưới đây chỉ để truy vết user story. Lịch có hiệu lực là:
+
+| Mốc | Phạm vi bắt buộc | Owner chính |
+|---|---|---|
+| 06–07/11 | schema Package/Level, auth, catalog, contract Run/Submit | TV1, TV2, TV3, TV4 |
+| 08–11/11 | Run/editor, migration nội dung, admin cơ bản | TV2, TV3, TV4 |
+| 12–15/11 | Submit/worker/verdict, progress/level, history và AI schema | TV2, TV3, TV4 |
+| 16–19/11 | leaderboard, Forum, AI integration/UI, đóng tính năng 19/11 21:00 | TV1, TV2, TV3, TV4 |
+| 20–21/11 | E2E, security, contract regression, tài liệu và sửa lỗi | Cả team |
+| 22/11 | Nộp/demo, không thêm tính năng | Cả team |
+
+Repository/GitHub không có task trong lịch này; mọi task liên quan trong bản cũ
+được xem là lịch sử legacy.
 
 | Sprint | Thời gian | Mục tiêu | Nhiệm vụ chính | Kết quả demo |
 |---|---|---|---|---|
-| **0** | Tuần 1 | Chuẩn bị | Chốt SRS và mục 8, T3-01, T1-01, T1-05, T4-01, T1-11, dựng repo, Docker Compose, CI, quy ước code | Repo chạy `docker compose up`, DB dựng từ migration |
-| **1** | Tuần 2–3 | Nền tảng | T1-02–T1-04, T4-01–T4-03, T2-01, T3-02, T1-17 | Đăng ký, đăng nhập thật; Landing; sandbox chạy một file Python |
-| **2** | Tuần 4–5 | Lõi luyện tập | T3-03–T3-08, T3-10, T3-15, T2-02, T2-04–T2-06, T4-04–T4-07, T1-06–T1-07, T1-17 | Chọn gói, chọn bài, mở editor, bấm Run (Python và C++) |
-| **3** | Tuần 6–7 | Chấm và tiến độ | T2-03, T2-07–T2-12, T2-16, T3-09, T3-11, T3-12, T4-08–T4-09, T4-11 (phần đầu), T1-08, T1-13 (bắt đầu), T1-09–T1-10 (nếu còn sức) | Submit đầy đủ, verdict, lưu AC, lên cấp, lịch sử |
-| **4** | Tuần 8–9 | Cộng đồng | T2-17–T2-18, T2-13, T1-09–T1-10, T1-13–T1-16, T1-19–T1-20, T4-10, T4-11, T3-13–T3-14 | Xếp hạng, diễn đàn, Admin hoàn thiện |
-| **5** | Tuần 10–11 | Hoàn thiện | T2-19, T2-14, T3-16, T4-12, T3-15 (≥ 30 bài), T1-18, T1-12, sửa lỗi, tối ưu, tài liệu | Demo toàn hệ thống, báo cáo kiểm thử |
+| **0** | 06–07/11 | Chuẩn bị | Chốt SRS, T3-01, T1-01, T1-05, T4-01, Docker Compose, CI, quy ước code | Workspace chạy `docker compose up`, DB dựng từ migration |
+| **1** | 06–07/11 | Nền tảng | T1-02–T1-04, T4-01–T4-03, T2-01, T3-02, T1-17 | Đăng ký, đăng nhập thật; Landing; sandbox chạy một file Python |
+| **2** | 08–11/11 | Lõi luyện tập | T3-03–T3-08, T3-10, T3-15, T2-02, T2-04–T2-06, T4-04–T4-07, T1-06–T1-07, T1-17 | Chọn gói, chọn bài, mở editor, bấm Run (Python và C++) |
+| **3** | 12–15/11 | Chấm và tiến độ | T2-03, T2-07–T2-12, T3-09, T3-11–T3-12, T3-17, T4-08–T4-09 | Submit/verdict/progress/level/history; AI schema sẵn sàng |
+| **4** | 16–19/11 | Cộng đồng và AI | T2-17–T2-20, T1-13–T1-16, T1-19–T1-20, T4-10–T4-11, T4-13 | Leaderboard, Forum, AI sau Accepted; đóng tính năng |
+| **5** | 20–22/11 | Hoàn thiện | T2-19, T2-14, T3-16, T4-12, T3-15, T1-18, T1-12, sửa lỗi/tài liệu | Demo, regression, nộp dự án |
 
 **Tiêu chí kết thúc mỗi sprint:** các nhiệm vụ trong cột "Kết quả demo" chạy được trên môi trường chung (Docker Compose) và được PO nghiệm thu.
 
@@ -262,6 +283,6 @@ Trong `services/core/`, mỗi người làm trong module riêng (`problems/`, `f
 
 Mỗi thành viên cập nhật cột Trạng thái của nhiệm vụ mình phụ trách trong tài liệu theo dõi chung (bảng tính hoặc issue tracker của repo). Giá trị hợp lệ: `Chưa bắt đầu`, `Đang làm`, `Chờ review`, `Hoàn thành`, `Bị chặn (ghi rõ chặn bởi mã nhiệm vụ nào)`.
 
-## 9. Phối hợp cập nhật v1.5
+## 9. Phối hợp cập nhật v2.0
 
-Stack bắt buộc: Next.js + TypeScript; Go + chi; pgx/sqlc; Goose; Asynq. Giữ toàn bộ mã task và owner. T4-11 triển khai Admin nội dung từ 08/11 thay vì chờ Sprint 3. T1-04 khung JWT contract làm 04–05/11 song song T1-02. T3-01 phải nhận schema thật trước migration. TV3 nhận repo/Compose/CI (US-04), TV2 hỗ trợ queue/sandbox. Lịch 11 tuần phía trên giữ làm tham chiếu; lịch thực thi 04–22/11 và quy tắc hỗ trợ AI tại 04_KE_HOACH_TICH_HOP.md.
+Stack bám code hiện tại: Next.js/TypeScript phía frontend; Go `net/http`, pgx, Redis list queue và Piston phía backend. Giữ mã task/owner nhưng không tạo repo/GitHub flow. T4-11 triển khai Admin từ 08/11; T2-20/T3-17/T4-13 là AI review mới. Lịch có hiệu lực 06–22/11/2026; quy tắc tích hợp xem `04_KE_HOACH_TICH_HOP.md`.
